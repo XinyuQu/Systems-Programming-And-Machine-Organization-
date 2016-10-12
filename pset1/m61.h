@@ -24,12 +24,16 @@ struct m61_statistics {
     unsigned long long fail_size;       // # bytes in failed alloc attempts
     char* heap_min;                     // smallest allocated addr
     char* heap_max;                     // largest allocated addr
-    struct metadata *head;               // head of the linked list
-            
+
+    struct metadata *head;              // head of the linked list for metadata
+    struct heavy_hitter *first          // head of the linked list for heavy hitter
+    
+
 };
 
 
-void m61_getstatistics(struct m61_statistics* stats); // stats is the pointer (to the struct) & m61_statistics is the struct
+void m61_getstatistics(struct m61_statistics* stats);
+
 void m61_printstatistics(void);
 void m61_printleakreport(void);
 

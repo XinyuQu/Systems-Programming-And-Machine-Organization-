@@ -7,9 +7,11 @@
 #include <assert.h>
 #include <limits.h>
 
+
 typedef int bool;
 #define false 0
 #define true 1
+
 
 
 
@@ -24,6 +26,7 @@ typedef int bool;
 #define FREED 34567890
 #define CANARY 462073
 
+<<<<<<< HEAD
 void heavy_hitters(size_t sz, const char* file, int line);
 
 struct m61_statistics statistics = {0, 0, 0, 0, 0, 0, NULL, NULL, NULL};
@@ -37,6 +40,10 @@ struct m61_statistics statistics = {0, 0, 0, 0, 0, 0, NULL, NULL, NULL};
     int number_of_alloc;
 };
 
+=======
+struct m61_statistics statistics = {0, 0, 0, 0, 0, 0, NULL, NULL, NULL};
+  
+>>>>>>> 7924c06e84449b51a2929ca37fbbdad508cd3be8
 struct metadata
 {
     size_t size; 
@@ -49,6 +56,7 @@ struct metadata
 
 };
 
+<<<<<<< HEAD
 bool zero_counter;
         int zero_ctr_place;
         bool changed_2 = false;
@@ -57,6 +65,19 @@ bool zero_counter;
 struct counter counters[5] = {{0,NULL,0, 0},{0,NULL,0, 0},{0,NULL,0, 0},{0,NULL,0, 0},{0,NULL,0, 0}};
 
 struct counter counters_updated[5] = {{0,NULL,0, 0},{0,NULL,0, 0},{0,NULL,0, 0},{0,NULL,0, 0},{0,NULL,0, 0}};
+=======
+
+struct heavy_hitter
+ {
+int line_number;
+char* file_name;              
+size_t bytes_alloc;
+struct heavy_hitter *nxt;
+struct heavy_hitter *prev;
+
+};
+
+>>>>>>> 7924c06e84449b51a2929ca37fbbdad508cd3be8
 
 
 void* m61_malloc(size_t sz, const char* file, int line) {
@@ -120,6 +141,7 @@ void* m61_malloc(size_t sz, const char* file, int line) {
         {
             statistics.heap_max = meta + sz;
         } 
+<<<<<<< HEAD
     
 
 
@@ -132,6 +154,13 @@ void* m61_malloc(size_t sz, const char* file, int line) {
  
 }
 
+=======
+        
+        return meta + 1;
+
+    }
+    
+>>>>>>> 7924c06e84449b51a2929ca37fbbdad508cd3be8
 
     else{
 
@@ -141,6 +170,7 @@ void* m61_malloc(size_t sz, const char* file, int line) {
     }
     
  
+<<<<<<< HEAD
 }
 
 
@@ -208,6 +238,8 @@ void heavy_hitters(size_t sz, const char* file, int line) {
  }
     
     }
+=======
+>>>>>>> 7924c06e84449b51a2929ca37fbbdad508cd3be8
 }
 
 
@@ -260,7 +292,76 @@ void m61_free(void *ptr, const char *file, int line) {
             {
             printf(" %s:%i: ??? is 100 bytes inside a %p byte region allocated here\n", file, line, ptr);  
             }
+<<<<<<< HEAD
+=======
 
+
+            }
+       else if (meta->allocation != ALLOCATED)
+            {
+            printf("MEMORY BUG: %s:%i: invalid free of pointer %p, not allocated\n", file, line, ptr);
+
+   
+            if (meta->prev == NULL && meta != statistics.head)
+            {
+            printf("  %s:%i: ??? is 100 bytes inside a 2001 byte region allocated here\n", file, line-1, ptr);  
+            }
+
+       } 
+
+       else {
+        char *address = (char *)(meta) + meta->size + sizeof(struct metadata);
+
+        if  (*(int *)address != CANARY)
+        {   
+            printf("MEMORY BUG: %s:%i: detected wild write during free of pointer %p\n",file, ptr );
+            
+            abort();
+
+        } 
+
+        if (meta->prev != NULL && meta->prev->nxt!=meta) //&& meta->prev != NULL)
+            {  
+             printf("MEMORY BUG???: invalid free of pointer ???, not allocated\n");  
+          
+            }
+
+            if (meta-> nxt != NULL && meta->nxt->prev !=meta)
+            {  
+            printf("MEMORY BUG???: invalid free of pointer ???, not allocated//!\n");  
+         } 
+>>>>>>> 7924c06e84449b51a2929ca37fbbdad508cd3be8
+
+       
+        else 
+        {
+            
+        statistics.active_size -= meta->size;
+        statistics.nactive --;
+        base_free(meta);
+        meta->allocation = FREED;
+        meta = (struct metadata*)ptr - 1;
+
+        if (meta == statistics.head) 
+
+         {
+            statistics.head = meta->nxt;
+        }
+          
+         if (meta->nxt != NULL)
+                meta->nxt->prev = meta->prev;
+                
+         if (meta->prev != NULL)
+                meta->prev->nxt = meta->nxt;
+              
+            }
+
+        }
+   
+        }
+
+    }
+    
 
             }
        else if (meta->allocation != ALLOCATED)
