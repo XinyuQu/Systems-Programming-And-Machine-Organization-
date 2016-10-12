@@ -1,12 +1,13 @@
 # are we using clang?
 ISCLANG := $(shell if $(CC) --version | grep LLVM >/dev/null; then echo 1; else echo 0; fi)
 
-CC += -std=gnu11 -W -Wall -Wshadow
-CFLAGS ?= -g $(DEFS)
+CFLAGS ?= -std=gnu11 -W -Wall -Wshadow -g $(DEFS)
 O ?= -O3
+<<<<<<< HEAD
 ifeq ($(filter 0 1 2 3,$(O)),$(strip $(O)))
 override O := -O$(O)
 endif
+30082a3afd46cd0293466ce1a63c5a29f4adaaec
 
 # these rules ensure dependencies are created
 DEPCFLAGS = -MD -MF $(DEPSDIR)/$*.d -MP

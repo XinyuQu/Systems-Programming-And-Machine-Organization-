@@ -6,6 +6,7 @@
 #define NALLOCATORS 40
 // hhtest: A sample framework for evaluating heavy hitter reports.
 
+
 // 40 different allocation functions give 40 different call sites
 void f00(size_t sz) { void* ptr = malloc(sz); free(ptr); }
 void f01(size_t sz) { void* ptr = malloc(sz); free(ptr); }
@@ -130,4 +131,5 @@ int main(int argc, char **argv) {
 
         phase(skew, count);
     }
+print_heavy_hitter_report();
 }

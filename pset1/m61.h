@@ -3,10 +3,17 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+
+typedef int bool;
+#define true 1
+#define false 0
+
 void* m61_malloc(size_t sz, const char* file, int line);
 void m61_free(void* ptr, const char* file, int line);
 void* m61_realloc(void* ptr, size_t sz, const char* file, int line);
 void* m61_calloc(size_t nmemb, size_t sz, const char* file, int line);
+void print_heavy_hitter_report();
+
 
 struct m61_statistics {
     unsigned long long nactive;         // # active allocations
@@ -17,9 +24,12 @@ struct m61_statistics {
     unsigned long long fail_size;       // # bytes in failed alloc attempts
     char* heap_min;                     // smallest allocated addr
     char* heap_max;                     // largest allocated addr
+    struct metadata *head;               // head of the linked list
+            
 };
 
-void m61_getstatistics(struct m61_statistics* stats);
+
+void m61_getstatistics(struct m61_statistics* stats); // stats is the pointer (to the struct) & m61_statistics is the struct
 void m61_printstatistics(void);
 void m61_printleakreport(void);
 
