@@ -165,7 +165,8 @@ int io61_writec(io61_file* f, int ch) {
     
     unsigned char buf[1];
     buf[0] = ch;
-    if (io61_write(f, (const char*)buf, 1) == 1)
+    int write_check = io61_write(f, (const char*)buf, 1); 
+    if (write_check == 1)
         return 0;
     else
         return -1;

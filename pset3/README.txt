@@ -5,7 +5,7 @@ YOU MUST FILL OUT THIS FILE BEFORE SUBMITTING!
 
 OTHER COLLABORATORS AND CITATIONS (if any):
 
-
+Exercises from the wiki
 
 KNOWN BUGS (if any):
 
