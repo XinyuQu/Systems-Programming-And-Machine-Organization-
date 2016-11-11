@@ -12,7 +12,7 @@
 
 // Process state type
 typedef enum procstate {
-    P_FREE = 0,                         // free slot
+    P_FREE = 0,                         // free slotV
     P_RUNNABLE,                         // runnable process
     P_BLOCKED,                          // blocked process
     P_BROKEN                            // faulted process

@@ -53,11 +53,14 @@ int program_load(proc* p, int programnumber,
     elf_header* eh = (elf_header*) ramimages[programnumber].begin;
     assert(eh->e_magic == ELF_MAGIC);
 
+
     // load each loadable program segment into memory
     elf_program* ph = (elf_program*) ((const uint8_t*) eh + eh->e_phoff);
     for (int i = 0; i < eh->e_phnum; ++i)
         if (ph[i].p_type == ELF_PTYPE_LOAD) {
             const uint8_t* pdata = (const uint8_t*) eh + ph[i].p_offset;
+            //if ((ph->p_flags & ELF_PFLAG_WRITE) == 0)
+
             if (program_load_segment(p, &ph[i], pdata, allocator) < 0)
                 return -1;
         }
@@ -97,8 +100,19 @@ static int program_load_segment(proc* p, const elf_program* ph,
     // copy data from executable image into process memory
     memcpy((uint8_t*) va, src, end_file - va);
     memset((uint8_t*) end_file, 0, end_mem - end_file);
+    //if ((ph->p_flags & ELF_PFLAG_WRITE) == 0)
+      //  vamapping->perm = (PTE_U | PTE_P);
+        
+
 
     // restore kernel pagetable
     set_pagetable(kernel_pagetable);
+    if ((ph->p_flags & ELF_PFLAG_WRITE) == 0){
+        for (uintptr_t addr = va; addr < end_mem; addr += PAGESIZE){
+        vamapping new = virtual_memory_lookup(p->p_pagetable, addr);
+        virtual_memory_map(p->p_pagetable, addr, new.pa, PAGESIZE,
+                                  PTE_P | PTE_U, allocator);
+        }
+    }
     return 0;
 }

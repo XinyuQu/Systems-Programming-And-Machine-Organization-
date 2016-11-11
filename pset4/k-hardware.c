@@ -357,6 +357,8 @@ static x86_64_pagetable* lookup_l4pagetable(x86_64_pagetable* pagetable,
         }
 
         // sanity-check page entry
+
+        
         assert(PTE_ADDR(pe) < MEMSIZE_PHYSICAL); // at sensible address
         if (perm & PTE_W)         // if requester wants PTE_W,
             assert(pe & PTE_W);   //   entry must allow PTE_W
