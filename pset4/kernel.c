@@ -336,7 +336,10 @@ void exception(x86_64_registers* reg) {
             current->p_registers.reg_rax  = fork();
         }
             
-  
+ case INT_SYS_EXIT: {
+
+exit((proc)current);
+}
 
 
     case INT_TIMER:

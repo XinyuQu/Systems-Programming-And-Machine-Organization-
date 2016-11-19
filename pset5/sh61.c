@@ -4,6 +4,9 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+//in COMAND, have a POINTER// INT that tells me what i was doing before... and stuff....
+
+
 
 // struct command
 //    Data structure describing a command. Add your own stuff.
@@ -13,6 +16,24 @@ struct command {
     int argc;      // number of arguments
     char** argv;   // arguments, terminated by NULL
     pid_t pid;     // process ID running this command, -1 if none
+    int background; //if see &
+    struct command *next;
+    struct command *down;
+    struct command *up;
+    struct command *prev;
+    int conditional_and;
+    int conditional_or;
+    int redirection; 
+    int has_pipe; 
+    int in_fd;
+    int out_fd;
+    int redin;
+    int redout;
+    int rederr;
+    char* redirection_info;
+    char* redirection_file;
+
+
 };
 
 
@@ -20,10 +41,19 @@ struct command {
 //    Allocate and return a new command structure.
 
 static command* command_alloc(void) {
+
     command* c = (command*) malloc(sizeof(command));
     c->argc = 0;
     c->argv = NULL;
     c->pid = -1;
+    c->background = 0; //if see &
+    c->next= c->prev = c->down = c->up = NULL;
+    c->conditional_and = c->conditional_or = 
+        c->in_fd = c->out_fd = c->redirection = c->redin = c->redout = c->rederr = 0;
+    c->redirection_info = NULL;
+
+    //c->redirection_filename =    
+ 
     return c;
 }
 
@@ -42,6 +72,7 @@ static void command_free(command* c) {
 // command_append_arg(c, word)
 //    Add `word` as an argument to command `c`. This increments `c->argc`
 //    and augments `c->argv`.
+
 
 static void command_append_arg(command* c, char* word) {
     c->argv = (char**) realloc(c->argv, sizeof(char*) * (c->argc + 2));
@@ -67,10 +98,126 @@ static void command_append_arg(command* c, char* word) {
 //       its own process group (if `pgid == 0`). To avoid race conditions,
 //       this will require TWO calls to `setpgid`.
 
+//fork in the child process returns 0.... if return value of fork is 0, we know we are in child
+// in the parent process, it returns the child's pid
+// useful as parent knows child's name
+// also, we can distinguish between parent and child
+
+/*void redirect(command* c){
+     int res = fork();
+     if(res == 0){
+        if (strcmp(c->redirection_info,">") == 0){
+            int filename = c->prev->redirection_file;
+            fdopen(filename,'O_WRONLY|O_CREAT|O_TRUNC');
+            //int fd = fileno(file);
+            dup2(filename,STDOUT_FILENO);
+            close(filename);
+
+
+        }
+        else if(strcmp(c->redirection_info,"<") == 0){
+            int filename = c->prev->redirection_file;
+            fdopen(filename,'O_RONLY|O_CREAT|O_TRUNC');
+            dup2(filename,STDIN_FILENO);
+            close(filename);
+
+        }
+
+        else{
+            int filename = c->prev->redirection_file;
+            fdopen(filename,'O_WRONLY|O_CREAT|O_TRUNC');
+            dup2(filename,STDERR_FILENO);
+            close(filename);
+
+        } 
+    }
+
+     
+   
+
+} */
+
 pid_t start_command(command* c, pid_t pgid) {
     (void) pgid;
-    // Your code here!
-    fprintf(stderr, "start_command not done yet\n");
+    int pipefd[2];
+    int fd;
+    //int filename;
+    //if (c->redirection){
+
+   // }
+
+
+    if (c->has_pipe == 1){
+        pipe(pipefd);
+        c->out_fd=pipefd[1];
+        c->down->in_fd=pipefd[0];
+        //dup2(pipefd[1],STDOUT_FILENO);
+        //close(pipefd[1]);
+
+
+    }
+        pid_t fork_return = fork();
+        if (fork_return == 0) {
+            
+            if(c->has_pipe ==1){
+                dup2(pipefd[1],STDOUT_FILENO);
+                
+            }
+             if(c->in_fd != 0){
+                dup2(c->in_fd, STDIN_FILENO);
+                
+
+            }
+             if(c->redirection == 1){
+                    //filename = (int)c->redirection_file;
+                    if (strcmp(c->redirection_info,">") == 0){
+                        fd = open(c->redirection_file,O_WRONLY | O_CREAT, 0666);
+                        //fprintf(stderr, "!");
+                        dup2(STDOUT_FILENO, fd);
+                        //fdopen(filename,'wb');
+                        //c->redin = fd; 
+                    }
+                    else if (strcmp(c->redirection_info,"<") == 0){
+                        fd = open(c->redirection_file,O_RDONLY);
+                        dup2(fd,STDIN_FILENO);
+                        fprintf(stderr, "2");
+                        //fdopen(filename,'rb');
+                        //c->redout = fd;
+                    }
+                    else {//if (strcmp(c->redirection_info,"2>") == 0)
+                        fd = open(c->redirection_file,O_WRONLY | O_CREAT, 0666);           
+                         dup2(fd,STDERR_FILENO);
+                         //fprintf(stderr, "3");
+                         //fdopen(filename,'wb');
+                        //c->rederr = fd; 
+                    }
+            }   
+                        setpgid(0, pgid);
+                        execvp(c->argv[0], c->argv);
+                        
+               
+        }
+        //parent setting pgid. If child stalls and parent runs, we need to take care of the child
+        setpgid(fork_return, pgid);
+
+        
+        
+
+     //book-keeping   
+        c->pid = fork_return;
+        if(c->has_pipe == 1){
+
+            close(pipefd[1]);
+        }
+        if(c->in_fd != 0){
+            close(c->in_fd);
+        }
+        if(c->redirection == 1)
+        //waitpid(fork_return, NULL, 0); 
+        close(fd);
+        
+    
+
     return c->pid;
 }
 
@@ -94,10 +241,85 @@ pid_t start_command(command* c, pid_t pgid) {
 //       - Call `set_foreground(0)` once the pipeline is complete.
 //       - Cancel the list when you detect interruption.
 
-void run_list(command* c) {
-    start_command(c, 0);
-    fprintf(stderr, "run_command not done yet\n");
+void run_list_vertical(command* c){
+    while (c != NULL) {
+          pid_t child_pid =  start_command(c, 0);
+           int status;
+           waitpid(child_pid, &status, 0);
+
+
+        if (WIFEXITED(status)) 
+        {
+            if (WEXITSTATUS(status) != 0)    
+              {
+                  if (c->conditional_and == 1) {
+                    while (c != NULL && c->conditional_and == 1)
+                    {
+                         c = c->down;
+                          //fprintf(stderr, "Check1");
+                    }
+
+                    c = c->down;
+                    continue;
+                    }
+               }
+
+            if (WEXITSTATUS(status) == 0)    
+              {
+                  if (c->conditional_or == 1) {
+                    while (c != NULL && c->conditional_or == 1)
+                    {
+                        //fprintf(stderr, "Check2");
+                          c = c->down;
+                    }
+
+                    c = c->down;
+                    continue;
+                }
+            }
+            c=c->down;
+        }
+    }
 }
+
+
+void run_list(command* c) {
+    // have a while loop 
+    // and then go to next c-> next
+    // in struct, have a ponter to next one
+    // want to be able to run processes in the background
+    //sleep; echo foo..... terminal will sleep for one second but we want foo to run immediately while another process sleeps
+  
+  
+    while (c != NULL) {
+
+        if (c->background == 1) {
+            
+            if (fork() == 0) {
+               
+                run_list_vertical(c);
+
+                _exit(0);
+            }
+            else {
+                
+                c=c->next;
+            }
+        }
+
+        else {
+            run_list_vertical(c);
+            c=c->next;
+        }
+
+    }
+}
+  
+
+
+
+
+
 
 
 // eval_line(c)
@@ -106,17 +328,85 @@ void run_list(command* c) {
 void eval_line(const char* s) {
     int type;
     char* token;
+
     // Your code here!
 
     // build the command
     command* c = command_alloc();
-    while ((s = parse_shell_token(s, &type, &token)) != NULL)
-        command_append_arg(c, token);
+   struct command* head = c;
+   struct command* head2 = c;
+//c->next = NULL;
+    while ((s = parse_shell_token(s, &type, &token)) != NULL) {
+        c->conditional_and=0;
+        c->conditional_or=0;
+        // put another start in the command struct...type will be command struct
+            
+        
+        if (type == TOKEN_AND) {
+            command* e = command_alloc();
+            c->conditional_and = 1;
+            c->down= e;
+            e->up = c;
+            c = e;
+        } 
+        else if (type == TOKEN_OR) {
+            command* e = command_alloc();
+            c->down= e;
+            c->conditional_or=1;
+            e->up = c;
+            c = e;
+        }
+        else if (type == TOKEN_BACKGROUND) {
+            head2->background = 1;
+            command* d = command_alloc();
+            head2->next = d;
+            d->prev = head2;
+            c = d;
+            head2=d;
+        }
+        else if (type == TOKEN_SEQUENCE) {
+            command* d = command_alloc();
+            head2->next = d;
+            d->prev = head2;
+            c = d;
+            head2 =d;
+        }
+        else if (type == TOKEN_REDIRECTION){
+            command* e = command_alloc();
+            c->down= e;
+            c->redirection = 1;
+            c->redirection_info = token;
+            parse_shell_token(s, &type, &token);
+            c->redirection_file = token;
+            e->up = c;
+            c = e;
 
-    // execute it
-    if (c->argc)
-        run_list(c);
+        }
+
+        else if (type == TOKEN_PIPE){
+            command* e = command_alloc();
+            c->down= e;
+            c->has_pipe=1;
+            e->up = c;
+            c = e;
+        }
+        else {
+            command_append_arg(c, token);
+        }
+    }
+
+    if (!c->argc)
+    {
+    c->prev->next= NULL;
     command_free(c);
+    c = NULL;
+
+    }
+        run_list(head);
+        while (head != NULL) {
+    command_free(head);
+    head = head->next;
+}
 }
 
 
@@ -180,7 +470,17 @@ int main(int argc, char* argv[]) {
 
         // Handle zombie processes and/or interrupt requests
         // Your code here!
+        waitpid(-1, NULL, WNOHANG);
+        waitpid(-1, NULL, WNOHANG);
+        waitpid(-1, NULL, WNOHANG);
+        waitpid(-1, NULL, WNOHANG);
+
+        //while (waitpid(-1, NULL, WNOHANG) == 0); 
+
+        
+        
     }
+
 
     return 0;
 }
