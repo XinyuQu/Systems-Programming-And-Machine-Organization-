@@ -180,7 +180,7 @@ pid_t start_command(command* c, pid_t pgid) {
                     else if (strcmp(c->redirection_info,"<") == 0){
                         fd = open(c->redirection_file,O_RDONLY);
                         dup2(fd,STDIN_FILENO);
-                        fprintf(stderr, "2");
+                        //fprintf(stderr, "2");
                         //fdopen(filename,'rb');
                         //c->redout = fd;
                     }
