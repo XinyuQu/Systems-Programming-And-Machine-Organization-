@@ -16,7 +16,8 @@ static const char* pong_host = PONG_HOST;
 static const char* pong_port = PONG_PORT;
 static const char* pong_user = PONG_USER;
 static struct addrinfo* pong_addr;
-
+// counter to keep track....
+int number_of_threads;
 
 // TIME HELPERS
 double elapsed_base = 0;
@@ -67,6 +68,9 @@ struct http_connection {
 char* http_truncate_response(http_connection* conn);
 static int http_process_response_headers(http_connection* conn);
 static int http_check_response_body(http_connection* conn);
+
+
+http_connection* arr[60] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
 static void usage(void);
 
@@ -159,6 +163,7 @@ void http_send_request(http_connection* conn, const char* uri) {
 //    prematurely, `conn->status_code` is -1.
 void http_receive_response_headers(http_connection* conn) {
     assert(conn->state != HTTP_REQUEST);
+
     if (conn->state < 0)
         return;
 
@@ -239,6 +244,11 @@ pthread_cond_t condvar;
 //    Connect to the server at the position indicated by `threadarg`
 //    (which is a pointer to a `pong_args` structure).
 void* pong_thread(void* threadarg) {
+
+
+    // CHECK NUMBER OF CONNECTIONS
+    // IF TOO MANY CONNECTIONS, DON'T EXIT.. DO WHAT?
+    //PTHREAD_CREATE...
     pthread_detach(pthread_self());
 
     // Copy thread arguments onto our stack.
@@ -247,27 +257,88 @@ void* pong_thread(void* threadarg) {
     char url[256];
     snprintf(url, sizeof(url), "move?x=%d&y=%d&style=on",
              pa.x, pa.y);
-
-    http_connection* conn = http_connect(pong_addr);
-    http_send_request(conn, url);
-    http_receive_response_headers(conn);
-    if (conn->status_code != 200)
-        fprintf(stderr, "%.3f sec: warning: %d,%d: "
+    http_connection* conn;
+    conn=NULL;
+    int x;
+    x= 10000;
+    while (1) {
+        //int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr);
+        pthread_mutex_lock(&mutex);
+        for (int i=0; i < 60; i++) {
+            if (arr[i] != NULL) {
+                //reuse connection
+                conn = arr[i];
+                arr[i]=NULL;
+            }
+        }   
+        pthread_mutex_unlock(&mutex);
+        if (conn == NULL) {
+            conn = http_connect(pong_addr);
+        }
+        //mutex. Check the result. If overloaded, sleep. Then unmutex.
+        //pthread_mutex_lock(&mutex);
+        http_send_request(conn, url);
+        //if ()
+        //response is in body
+        http_receive_response_headers(conn); //see if its breaking
+        if (conn->status_code != 200)
+            fprintf(stderr, "%.3f sec: warning: %d,%d: "
                 "server returned status %d (expected 200)\n",
                 elapsed(), pa.x, pa.y, conn->status_code);
+        if (conn->status_code == -1) {
+            http_close(conn);
+            conn=NULL;
+            //remove connection from array
+            // when should i do this?
+            //                                arr[i]==NULL;
+            //conn->state = HTTP_CLOSED;
+            // http_connect(pong_addr);
+            usleep(x);
+            x = 2 * x;
+        }
+        else {
+            break;
+        }
+    }
 
+
+    pthread_cond_signal(&condvar);
     http_receive_response_body(conn);
+    //after this, 
+    //
     double result = strtod(conn->buf, NULL);
+    // this changes the first number to 
+
+    if (result>0){
+        pthread_mutex_lock(&mutex);
+        usleep(result * 1000);
+        pthread_mutex_unlock(&mutex);
+    }
     if (result < 0) {
         fprintf(stderr, "%.3f sec: server returned error: %s\n",
                 elapsed(), http_truncate_response(conn));
         exit(1);
     }
 
-    http_close(conn);
+    if (conn->state == HTTP_DONE) {
+        pthread_mutex_lock(&mutex);
+        int i=-1;
+        do {
+            i++;
+        }
+        while (arr[i]!= NULL && i<60);
+        arr[i]=conn;
+        pthread_mutex_unlock(&mutex);
+    }
+    else
+        http_close(conn);
+
 
     // signal the main thread to continue
-    pthread_cond_signal(&condvar);
+    // pthread_create();
+    //pthread_create(&pt, NULL, pong_thread, &pa);
+    //pthread_join(pt, NULL);
+    //pthread_join(pt, NULL);
     // and exit!
     pthread_exit(NULL);
 }
@@ -284,6 +355,8 @@ static void usage(void) {
 // main(argc, argv)
 //    The main loop.
 int main(int argc, char** argv) {
+
+    pthread_mutex_init(&mutex, NULL);
     // parse arguments
     int ch, nocheck = 0;
     while ((ch = getopt(argc, argv, "nh:p:u:")) != -1) {
