@@ -264,13 +264,36 @@ void* pong_thread(void* threadarg) {
     while (1) {
         //int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr);
         pthread_mutex_lock(&mutex);
+/*
+        int array_number = 0;
+while (arr[array_number] == NULL && array_number < 60) {
+	array_number++;
+}
+	      conn = arr[array_number];
+            arr[array_number]=NULL;
+
+
+*/
         for (int i=0; i < 60; i++) {
             if (arr[i] != NULL) {
                 //reuse connection
                 conn = arr[i];
                 arr[i]=NULL;
+                i=60;
+
             }
-        }   
+
+        }
+         
+
+                /*int count = 0;
+        for (int i=0; i<60; i++) {
+        	if (arr[i] != NULL)
+        		count++;
+        }
+        printf("%d\n", count);
+        */
+           
         pthread_mutex_unlock(&mutex);
         if (conn == NULL) {
             conn = http_connect(pong_addr);
