@@ -477,6 +477,10 @@ int main(int argc, char** argv) {
     }
 }
 
+// julio says try running at prcoess response fault 
+// buffer overflow 
+// see what the server could be doing to cause this
+// then accomodate for it.... 
 
 // HTTP PARSING
 
@@ -487,7 +491,7 @@ int main(int argc, char** argv) {
 static int http_process_response_headers(http_connection* conn) {
     size_t i = 0;
     while ((conn->state == HTTP_INITIAL || conn->state == HTTP_HEADERS)
-           && i + 2 <= conn->len) {
+           && i + 2 < conn->len) {
         if (conn->buf[i] == '\r' && conn->buf[i+1] == '\n') {
             conn->buf[i] = 0;
             if (conn->state == HTTP_INITIAL) {
