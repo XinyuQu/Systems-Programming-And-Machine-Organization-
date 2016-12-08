@@ -16,6 +16,11 @@ static const char* pong_host = PONG_HOST;
 static const char* pong_port = PONG_PORT;
 static const char* pong_user = PONG_USER;
 static struct addrinfo* pong_addr;
+///\ use a vector
+// 2 left is a kb or something....
+#define BUFSIZE 7000000
+
+// a few megabytes
 // counter to keep track....
 int number_of_threads;
 
@@ -53,6 +58,7 @@ struct http_connection {
 
     char buf[BUFSIZ];       // Response buffer
     size_t len;             // Length of response buffer
+    //size_t bufer_size;
 };
 
 // `http_connection::state` constants
@@ -488,10 +494,27 @@ int main(int argc, char** argv) {
 //    Parse the response represented by `conn->buf`. Returns 1
 //    if more header data remains to be read, 0 if all headers
 //    have been consumed.
+
+
+/*
+change sttruct
+                             keep tab of buffer length
+                             that is separate variable 
+                             alter length
+                             keep track and make sure thtta buffer size is bigger than conn length
+                             malloc for struct/ malloc for buffer
+                             make buffer be dyanmically allocated instead of on stack
+                             */
+
 static int http_process_response_headers(http_connection* conn) {
     size_t i = 0;
     while ((conn->state == HTTP_INITIAL || conn->state == HTTP_HEADERS)
-           && i + 2 < conn->len) {
+           && i + 2 <= conn->len) {
+    	/*
+    	if (BUFSIZ< conn->len) {
+    		malloc(sizeof(buf);
+    	}
+    	*/
         if (conn->buf[i] == '\r' && conn->buf[i+1] == '\n') {
             conn->buf[i] = 0;
             if (conn->state == HTTP_INITIAL) {
