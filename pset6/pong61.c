@@ -18,7 +18,7 @@ static const char* pong_user = PONG_USER;
 static struct addrinfo* pong_addr;
 ///\ use a vector
 // 2 left is a kb or something....
-#define BUFSIZE 7000000
+#define BUFSIZE 50000000
 
 // a few megabytes
 // counter to keep track....
