@@ -339,10 +339,11 @@ while (arr[array_number] == NULL && array_number < 60) {
         //if ()
         //response is in body
         http_receive_response_headers(conn); //see if its breaking
-        if (conn->status_code != 200)
+        /* if (conn->status_code != 200)
             fprintf(stderr, "%.3f sec: warning: %d,%d: "
                 "server returned status %d (expected 200)\n",
                 elapsed(), pa.x, pa.y, conn->status_code);
+                */ 
         if (conn->status_code == -1) {
             http_close(conn);
             conn=NULL;
