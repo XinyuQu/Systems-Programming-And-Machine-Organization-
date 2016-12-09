@@ -18,7 +18,8 @@ static const char* pong_user = PONG_USER;
 static struct addrinfo* pong_addr;
 ///\ use a vector
 // 2 left is a kb or something....
-#define BUFSIZE 50000000
+//#define BUFSIZE 90000000
+//#define BUFSIZ 100000000
 
 // a few megabytes
 // counter to keep track....
@@ -56,9 +57,11 @@ struct http_connection {
     int has_content_length; // 1 iff Content-Length was provided
     int eof;                // 1 iff connection EOF has been reached
 
-    char buf[BUFSIZ];       // Response buffer
+   // char buf[BUFSIZ];       // Response buffer
+    char *buf;
+    //int bufer_size
     size_t len;             // Length of response buffer
-    //size_t bufer_size;
+    size_t bufer_size;
 };
 
 // `http_connection::state` constants
@@ -105,6 +108,8 @@ http_connection* http_connect(const struct addrinfo* ai) {
     // construct an http_connection object for this connection
     http_connection* conn =
         (http_connection*) malloc(sizeof(http_connection));
+    conn->buf = malloc(BUFSIZ);
+	conn->bufer_size = BUFSIZ;
     conn->fd = fd;
     conn->state = HTTP_REQUEST;
     conn->eof = 0;
@@ -168,6 +173,9 @@ void http_send_request(http_connection* conn, const char* uri) {
 //    holds the server's status code. If the connection terminates
 //    prematurely, `conn->status_code` is -1.
 void http_receive_response_headers(http_connection* conn) {
+
+
+
     assert(conn->state != HTTP_REQUEST);
 
     if (conn->state < 0)
@@ -176,7 +184,12 @@ void http_receive_response_headers(http_connection* conn) {
     // read & parse data until told `http_process_response_headers`
     // tells us to stop
     while (http_process_response_headers(conn)) {
-        ssize_t nr = read(conn->fd, &conn->buf[conn->len], BUFSIZ);
+    	    	if (conn->bufer_size == conn->len) {
+    		conn->bufer_size = 2 * conn->bufer_size;
+    		conn->buf = realloc(conn->buf,conn->bufer_size);
+    	}
+    	
+        ssize_t nr = read(conn->fd, &conn->buf[conn->len], conn->bufer_size- conn->len);
         if (nr == 0)
             conn->eof = 1;
         else if (nr == -1 && errno != EINTR && errno != EAGAIN) {
@@ -263,8 +276,15 @@ void* pong_thread(void* threadarg) {
     char url[256];
     snprintf(url, sizeof(url), "move?x=%d&y=%d&style=on",
              pa.x, pa.y);
+
+   //buf = 
+
+
+
     http_connection* conn;
     conn=NULL;
+
+	
     int x;
     x= 10000;
     while (1) {
@@ -302,11 +322,20 @@ while (arr[array_number] == NULL && array_number < 60) {
            
         pthread_mutex_unlock(&mutex);
         if (conn == NULL) {
+        	// lock here
+        	// lock before connect and unlock after sent anything.... but because of the way the server is written, if you lock for that entire thing, run into issues where it thinks it isn't far enough 
+        	// multiople things aren't connecting at same time
+        	  pthread_mutex_lock(&mutex);
             conn = http_connect(pong_addr);
+            pthread_mutex_unlock(&mutex);
+            // unlock here
+               
         }
         //mutex. Check the result. If overloaded, sleep. Then unmutex.
         //pthread_mutex_lock(&mutex);
         http_send_request(conn, url);
+
+        // TECHNICALLY SHOULD BE HERE
         //if ()
         //response is in body
         http_receive_response_headers(conn); //see if its breaking
@@ -508,13 +537,14 @@ change sttruct
 
 static int http_process_response_headers(http_connection* conn) {
     size_t i = 0;
+
+
     while ((conn->state == HTTP_INITIAL || conn->state == HTTP_HEADERS)
            && i + 2 <= conn->len) {
-    	/*
-    	if (BUFSIZ< conn->len) {
-    		malloc(sizeof(buf);
-    	}
-    	*/
+    	
+
+
+    	
         if (conn->buf[i] == '\r' && conn->buf[i+1] == '\n') {
             conn->buf[i] = 0;
             if (conn->state == HTTP_INITIAL) {
