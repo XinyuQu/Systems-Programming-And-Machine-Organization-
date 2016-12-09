@@ -16,12 +16,7 @@ static const char* pong_host = PONG_HOST;
 static const char* pong_port = PONG_PORT;
 static const char* pong_user = PONG_USER;
 static struct addrinfo* pong_addr;
-///\ use a vector
-// 2 left is a kb or something....
-//#define BUFSIZE 90000000
-//#define BUFSIZ 100000000
 
-// a few megabytes
 // counter to keep track....
 int number_of_threads;
 
@@ -56,12 +51,10 @@ struct http_connection {
     size_t content_length;  // Content-Length value
     int has_content_length; // 1 iff Content-Length was provided
     int eof;                // 1 iff connection EOF has been reached
-
-   // char buf[BUFSIZ];       // Response buffer
-    char *buf;
-    //int bufer_size
+   //char buf[BUFSIZ];     // Response buffer
+    char *buf;               // Pointer to buffer
     size_t len;             // Length of response buffer
-    size_t bufer_size;
+    size_t bufer_size;      // Size of buffer
 };
 
 // `http_connection::state` constants
@@ -264,10 +257,6 @@ pthread_cond_t condvar;
 //    (which is a pointer to a `pong_args` structure).
 void* pong_thread(void* threadarg) {
 
-
-    // CHECK NUMBER OF CONNECTIONS
-    // IF TOO MANY CONNECTIONS, DON'T EXIT.. DO WHAT?
-    //PTHREAD_CREATE...
     pthread_detach(pthread_self());
 
     // Copy thread arguments onto our stack.
@@ -277,29 +266,15 @@ void* pong_thread(void* threadarg) {
     snprintf(url, sizeof(url), "move?x=%d&y=%d&style=on",
              pa.x, pa.y);
 
-   //buf = 
-
-
 
     http_connection* conn;
     conn=NULL;
 
-	
     int x;
     x= 10000;
     while (1) {
-        //int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr);
         pthread_mutex_lock(&mutex);
-/*
-        int array_number = 0;
-while (arr[array_number] == NULL && array_number < 60) {
-	array_number++;
-}
-	      conn = arr[array_number];
-            arr[array_number]=NULL;
 
-
-*/
         for (int i=0; i < 60; i++) {
             if (arr[i] != NULL) {
                 //reuse connection
@@ -311,34 +286,18 @@ while (arr[array_number] == NULL && array_number < 60) {
 
         }
          
-
-                /*int count = 0;
-        for (int i=0; i<60; i++) {
-        	if (arr[i] != NULL)
-        		count++;
-        }
-        printf("%d\n", count);
-        */
            
         pthread_mutex_unlock(&mutex);
         if (conn == NULL) {
-        	// lock here
-        	// lock before connect and unlock after sent anything.... but because of the way the server is written, if you lock for that entire thing, run into issues where it thinks it isn't far enough 
-        	// multiople things aren't connecting at same time
-        	  pthread_mutex_lock(&mutex);
+        	pthread_mutex_lock(&mutex);
             conn = http_connect(pong_addr);
             pthread_mutex_unlock(&mutex);
-            // unlock here
                
         }
-        //mutex. Check the result. If overloaded, sleep. Then unmutex.
-        //pthread_mutex_lock(&mutex);
+
         http_send_request(conn, url);
 
-        // TECHNICALLY SHOULD BE HERE
-        //if ()
-        //response is in body
-        http_receive_response_headers(conn); //see if its breaking
+        http_receive_response_headers(conn); 
         /* if (conn->status_code != 200)
             fprintf(stderr, "%.3f sec: warning: %d,%d: "
                 "server returned status %d (expected 200)\n",
@@ -347,11 +306,6 @@ while (arr[array_number] == NULL && array_number < 60) {
         if (conn->status_code == -1) {
             http_close(conn);
             conn=NULL;
-            //remove connection from array
-            // when should i do this?
-            //                                arr[i]==NULL;
-            //conn->state = HTTP_CLOSED;
-            // http_connect(pong_addr);
             usleep(x);
             x = 2 * x;
         }
@@ -360,13 +314,10 @@ while (arr[array_number] == NULL && array_number < 60) {
         }
     }
 
-
     pthread_cond_signal(&condvar);
     http_receive_response_body(conn);
-    //after this, 
-    //
+
     double result = strtod(conn->buf, NULL);
-    // this changes the first number to 
 
     if (result>0){
         pthread_mutex_lock(&mutex);
@@ -392,13 +343,6 @@ while (arr[array_number] == NULL && array_number < 60) {
     else
         http_close(conn);
 
-
-    // signal the main thread to continue
-    // pthread_create();
-    //pthread_create(&pt, NULL, pong_thread, &pa);
-    //pthread_join(pt, NULL);
-    //pthread_join(pt, NULL);
-    // and exit!
     pthread_exit(NULL);
 }
 
@@ -513,10 +457,6 @@ int main(int argc, char** argv) {
     }
 }
 
-// julio says try running at prcoess response fault 
-// buffer overflow 
-// see what the server could be doing to cause this
-// then accomodate for it.... 
 
 // HTTP PARSING
 
@@ -526,16 +466,6 @@ int main(int argc, char** argv) {
 //    have been consumed.
 
 
-/*
-change sttruct
-                             keep tab of buffer length
-                             that is separate variable 
-                             alter length
-                             keep track and make sure thtta buffer size is bigger than conn length
-                             malloc for struct/ malloc for buffer
-                             make buffer be dyanmically allocated instead of on stack
-                             */
-
 static int http_process_response_headers(http_connection* conn) {
     size_t i = 0;
 
@@ -544,8 +474,6 @@ static int http_process_response_headers(http_connection* conn) {
            && i + 2 <= conn->len) {
     	
 
-
-    	
         if (conn->buf[i] == '\r' && conn->buf[i+1] == '\n') {
             conn->buf[i] = 0;
             if (conn->state == HTTP_INITIAL) {
