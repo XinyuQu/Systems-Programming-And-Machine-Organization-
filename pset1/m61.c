@@ -186,7 +186,7 @@ Either that's a new line file/ make new mode and keep track of it
 Or you've already been keeping track of it it / so add byte
 */
 
-  if(drand48() < 0.2)
+  if(drand48() <= 0.2)
   {
     if heavy-hitter-head->size_t_bytes_alloc > 0.2 
     {
