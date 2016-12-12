@@ -74,8 +74,11 @@ char* file_name;
 size_t bytes_alloc;
 struct heavy_hitter *nxt;
 struct heavy_hitter *prev;
+}
+heavy-hitter* heavy-hitter-head;
+;
 
-};
+
 
 >>>>>>> 7924c06e84449b51a2929ca37fbbdad508cd3be8
 
@@ -175,8 +178,38 @@ void* m61_malloc(size_t sz, const char* file, int line) {
 
 
 void heavy_hitters(size_t sz, const char* file, int line) {
+/*
+Sample nth allocation
 
-  
+Either that's a new line file/ make new mode and keep track of it
+
+Or you've already been keeping track of it it / so add byte
+*/
+
+  if(drand48() < 0.2)
+  {
+    if heavy-hitter-head->size_t_bytes_alloc > 0.2 
+    {
+
+        if (!heavy_hitter)
+            heavy_hitter-head*ptr; //malloc
+        else 
+            curr_ptr*head;
+        if file* line
+            bytes_alloc+=sz;
+
+    }
+}
+ 
+ if(curr-ptr == NULL) //MALLOC
+   
+
+}
+
+/*
+
+
+
         for (int j = 0; j < 5; j++)
             {
             if (counters[j].number_of_alloc == 0)
@@ -241,6 +274,7 @@ void heavy_hitters(size_t sz, const char* file, int line) {
 =======
 >>>>>>> 7924c06e84449b51a2929ca37fbbdad508cd3be8
 }
+*/
 
 
         void print_heavy_hitter_report() {
